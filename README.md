@@ -61,7 +61,7 @@ my_index = MyLibraryIndex()
 genome_subset = my_index.query(return_archaea)
 
 # For example, plot histogram of lengths
-lengths = [len(g) for g in genome_subsets]
+lengths = [len(g) for g in genome_subset]
 plt.hist(lengths)
 plt.show()
 ```
@@ -84,7 +84,7 @@ def my_query(metadata):
 
 
 my_index = MyLibraryIndex()
-genomes = my_index.query(list_of_paths)
+genomes = my_index.query(my_query)
 
 # Simulate abundances per contig
 num_reads = 1e9
@@ -124,7 +124,7 @@ def my_query(metadata):
 
 
 my_index = MyLibraryIndex()
-genomes = my_index.query(list_of_paths)
+genomes = my_index.query(my_query)
 
 num_contigs = 1e5
 counts = {c: int(random.random() * num_contigs) for c in genomes.flattened_contigs()}
@@ -159,7 +159,7 @@ def my_query(metadata):
 
 
 my_index = MyLibraryIndex()
-genomes = my_index.query(list_of_paths)
+genomes = my_index.query(my_query)
 
 num_contigs = 1e5
 abunds = poisson_diffcov(genomes)
