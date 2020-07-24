@@ -10,7 +10,7 @@ from mgxsim import GenomeIndex
 class GTDBr95Index(GenomeIndex):
     def __init__(self, root_path: Union[str, Path]):
         super().__init__()
-        self.df = self.build_index(root_path)
+        self.metadata = self.build_index(root_path)
 
     def build_index(self, root_path: Union[str, Path]) -> pd.DataFrame:
         root_path = Path(root_path)
