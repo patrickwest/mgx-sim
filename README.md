@@ -1,45 +1,52 @@
-# mgx-sim
+# mgxsim
 
-mgx-sim provides tools for accessing sets of genomes based on metadata, simulating reads or contigs from those genomes, and feeding the results into other tools. We aim to add minimal overhead and enable easy reproducibility.
+mgxsim provides tools for accessing sets of genomes based on metadata, simulating reads or contigs from those genomes, and feeding the results into other tools. Our goals are minimal overhead and easy reproducibility.
 
-## Genome Libraries
+TODOs:
 
-We refer to a collection of genomes and metadata about those genomes as a "Genome Library". The central component of a Genome Library is a `GenomeLibraryIndex`, which contains the following data in a pandas DataFrame,
+1. Make subclassing and validation easier.
+2. Remove the triple nested comprehensions necessary for simulation examples.
 
-1. Absolute path to every genome fasta file in the library.
-2. Any metadata associated with every genome.
+## Representing a Set of Genomes
 
-## Creating a Genome Library
+We provide two core classes for manipulating sets of genomes. These are 
+1. `GenomeIndex`: Provides a mapping from metadata to absolute path for every genome.
+2. `Genome`: Represents a genome as a container of contigs.
 
-To create a Genome Library, all you need to do is create an index for it! This is done by subclassing `GenomeLibraryIndex` and implementing `build_index`. 
+## Adding a New Set of Genomes
+
+To adapt mgxsim for your genome set, all you need to do is create a custom `GenomeIndex`. This is done by subclassing `GenomeIndex` and implementing `load_metadata`.
 
 ```python
 import pandas as pd
 
-from mgxsim import GenomeLibraryIndex
+from mgxsim import GenomeIndex
 
 
-class MyLibraryIndex(GenomeLibraryIndex):
+class TrivialIndex(GenomeIndex):
 
-    def build_index(self, path_to_metadata = "data/metadata.csv"):
+    def __init__(self, path_to_medata = "data/metadata.csv"):
+        super().__init__()
+        self.metadata = build_index(path_to_metadata)
+
+    def load_metadata(self, path_to_metadata):
         # Assumes metadata.csv is already formatted with absolute paths.
         df = pd.read_csv(path_to_metadata)
         return df
 ```
 
-The `build_index` method creates a pandas DataFrame containing all metadata of interest. Every `GenomeLibraryIndex`'s DataFrame MUST have a column called "genome_path" containing the absolute path to a fasta file for that genome. Everything else is up to you.
+Note that every subclass of `GenomeIndex` must create an attribute `self.metadata` and this DataFrame MUST have a column called "genome_path" containing the absolute path to a fasta file for that genome. Everything else is up to you.
 
-## Using a Genome Library
+For a more complicated example, check out `mgxsim/gtdb/gtdb_index.py` for a [GTDB](https://gtdb.ecogenomic.org/) index.
 
-Once you've followed the steps above, you can subset, simulate, and more. The basic objects we provide are
 
-- `GenomeLibraryIndex`: Wraps a `pandas.DataFrame` of all metadata. Has an absolute path for every genome.
-- `Genome`: Wraps a list of `Bio.SeqRecord`s for each contig in a genome.
-- `GenomeLibrary`: Wraps a list of `Genome`s as well as associated metadata in the associated `GenomeLibraryIndex`.
+## Using a GenomeIndex
+
+Once you've followed the steps above, you can subset, simulate, and more. We show a few common use cases below. Check out the `examples` directory for more!
 
 ### Subsetting
 
-Any function from the metadata DataFrame to a list of genomes can be used to extract genomes from a library. This is done with `GenomeLibraryIndex.query`, which returns a `GenomeLibrary`.
+Any function from metadata to a list of genome paths can be used to load genomes. This is done with `GenomeIndex.query`, which returns a list of `Genomes`s.
 
 ```python
 from typing import List
@@ -47,8 +54,8 @@ from typing import List
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# Subclass GenomeLibraryIndex in my_lib_idx.py
-from my_lib_idx import MyLibraryIndex
+# Subclass GenomeIndex in triv_idx.py
+from triv_idx import TrivialIndex
 
 
 def return_archaea(metadata: pd.DataFrame) -> List[str]:
@@ -57,7 +64,7 @@ def return_archaea(metadata: pd.DataFrame) -> List[str]:
     return all_archaea.genome_path.tolist()
 
 
-my_index = MyLibraryIndex()
+my_index = TrivialIndex()
 genome_subset = my_index.query(return_archaea)
 
 # For example, plot histogram of lengths
@@ -75,7 +82,7 @@ from iss.abundance import lognormal
 from iss.error_models.basic import BasicErrorModel
 from iss.generator import simulate_read
 
-from mgxsim import MyLibraryIndex
+from triv_idx import TrivialIndex
 
 
 def my_query(metadata):
@@ -83,7 +90,7 @@ def my_query(metadata):
     return list_of_paths
 
 
-my_index = MyLibraryIndex()
+my_index = TrivialIndex()
 genomes = my_index.query(my_query)
 
 # Simulate abundances per contig
@@ -108,14 +115,14 @@ genome_5_contig_4_reads = reads[5][4]
 
 ### Simulating Contigs
 
-We provide simple contig simulation utils directly. For example, the function `random_fixed_len_contig` samples a random position and returns a contig of fixed length.
+We provide simple contig simulation functions directly. For example, the function `random_fixed_len_contig` samples a random position and returns a contig of fixed length.
 
 ```python
 import random
 
-from mgxsim.sim.contigs import random_fixed_length_contig
+from mgxsim.sample import random_fixed_length_contig
 
-from my_lib_idx import MyLibraryIndex
+from triv_idx import TrivialIndex
 
 
 def my_query(metadata):
@@ -123,7 +130,7 @@ def my_query(metadata):
     return list_of_paths
 
 
-my_index = MyLibraryIndex()
+my_index = TrivialIndex()
 genomes = my_index.query(my_query)
 
 num_contigs = 1e5
@@ -147,10 +154,10 @@ sim_contigs = [
 Simulating correlated coverage for all contigs in a genome can be useful. We provide some distributions for handling this. The recommended one is `poisson_diffcov`. This generates a random lambda > 0 for every genome, then samples coverage for each contig from a Poisson with mean lambda * length of contig.
 
 ```python
-from mgxsim.sim.distributions import poisson_diffcov
-from mgxsim.sim.contigs import random_fixed_length_contig
+from mgxsim.distributions import poisson_diffcov
+from mgxsim.sample import random_fixed_length_contig
 
-from my_lib_idx import MyLibraryIndex
+from triv_idx import TrivialIndex
 
 
 def my_query(metadata):
@@ -158,7 +165,7 @@ def my_query(metadata):
     return list_of_paths
 
 
-my_index = MyLibraryIndex()
+my_index = TrivialIndex()
 genomes = my_index.query(my_query)
 
 num_contigs = 1e5
@@ -167,6 +174,6 @@ abunds = poisson_diffcov(genomes)
 # Continue simulating reads, contigs, what have you..
 ```
 
-## What mgx-sim is not for
+## What mgxsim is not for
 
 This library is intended for relatively small-scale, self-contained projects. It is not a replacement for a proper database!
