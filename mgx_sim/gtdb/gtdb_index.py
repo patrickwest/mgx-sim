@@ -20,7 +20,7 @@ class GTDBr95Index(GenomeIndex):
         metadata = pd.read_csv(metadata_path, sep="\t")
 
         tree_path = root_path / Path("taxonomy") / Path("gtdb_taxonomy.tsv")
-        raw_tree = pd.read_csv(tree_path, sep="\t")
+        raw_tree = pd.read_csv(tree_path, sep="\t", header=None)
 
         tree = self._clean_raw_tree(raw_tree)
 
