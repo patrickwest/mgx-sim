@@ -7,6 +7,14 @@ TODOs:
 1. Make subclassing and validation easier.
 2. Remove the triple nested comprehensions necessary for simulation examples.
 
+## Installation
+
+Using pip, just run
+
+```bash
+pip install .
+```
+
 ## Representing a Set of Genomes
 
 We provide two core classes for manipulating sets of genomes. These are 
