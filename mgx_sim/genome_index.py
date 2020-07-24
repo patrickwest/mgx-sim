@@ -17,7 +17,7 @@ class GenomeIndex:
         pass
 
     def __getitem__(self, genome: Genome) -> pd.Series:
-        return self.df[genome.abs_path]
+        return self.df[self.df.genome_path == genome.abs_path]
 
     def query(
         self, query_fn: Callable[[pd.DataFrame], List[Union[Path, str]]]
