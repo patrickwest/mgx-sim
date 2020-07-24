@@ -1,5 +1,7 @@
 from typing import Iterator
 
+import gzip
+
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 
@@ -7,7 +9,8 @@ from Bio.SeqRecord import SeqRecord
 class Genome:
     def __init__(self, abs_path):
         self._abs_path = str(abs_path)
-        self.contigs = list(SeqIO.parse(self.abs_path, "fasta"))
+        with gzip.open(self.abs_path, "rt") as handle:
+            self.contigs = list(SeqIO.parse(handle, "fasta"))
 
     @property
     def abs_path(self) -> str:
